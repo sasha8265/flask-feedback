@@ -25,3 +25,32 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.id} username={self.username} first_name={self.first_name} last_name={self.last_name} email={self.email}>"
+
+
+    @classmethod
+    def register(cls, username, pwd, email, fn, ln):
+        """Register user w/hashed password & return user."""
+
+        hashed = bcrypt.generate_password_hash(pwd)
+        # turn bytestring into normal (unicode utf8) string
+        hashed_utf8 = hashed.decode("utf8")
+
+        # return instance of user w/username and hashed pwd
+        return cls(username=username, password=hashed_utf8, email=email, first_name=fn, last_name=ln)
+
+
+    @classmethod
+    def authenticate(cls, username, pwd):
+        """
+        Validate that user exists & password is correct.
+        Return user if valid; 
+        else return False.
+        """
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and bcrypt.check_password_hash(user.password, pwd):
+            # return user instance
+            return user
+        else:
+            return False

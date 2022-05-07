@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash
-from models import connect_db, db
-# from forms import 
+from models import connect_db, db, User
+from forms import RegisterForm, LoginForm
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
@@ -12,4 +12,103 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 
 connect_db(app)
+db.create_all()
 
+
+@app.route('/')
+def home():
+    return redirect('/register')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register_user():
+    """
+    Show registration form
+    Register a new user on form submission
+    """
+
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        email = form.email.data
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        new_user = User.register(username, password, email, first_name, last_name)
+
+        db.session.add(new_user)
+
+        # Move this logic into the form class
+        try:
+            db.session.commit()
+        except IntegrityError:
+            form.username.errors.append('Username already in use')
+            return render_template('register.html', form=form)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            form.email.errors.append('Email address already taken')
+            return render_template('register.html', form=form)
+
+        # if RegisterForm.validate():
+        #     db.session.commit()
+
+        session['user_id'] = new_user.id
+        flash ('Welcome! Successfully created your account!', "success")
+
+        return redirect('/secret')
+
+    else:
+        return render_template('register.html', form=form)
+
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_user():
+    """Show login form or handle form submission"""
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        user = User.authenticate(username, password)
+
+        if user:
+            flash(f'Welcome back {user.first_name} {user.last_name}!', "primary")
+            session['user_id'] = user.id
+            return redirect('/secret')
+
+        else:
+            flash("invalid username or password. Please try again", "danger")
+            form.username.errors = ['Invalid username or password']
+
+    return render_template('login.html', form=form)
+
+
+
+@app.route('/secret')
+def secret_page():
+    """
+    Show secret page if user is logged in
+    If no user is logged in, returns to register page
+    """
+
+    if "user_id" not in session:
+        flash('Please register or login first!', "warning")
+        return redirect('/')
+
+    else:
+        return render_template('secret.html')
+
+
+
+@app.route('/logout')
+def logout_user():
+    """Log out current user in session"""
+
+    session.pop('user_id')
+    flash('Goodbye!', 'info')
+    return redirect('/')
