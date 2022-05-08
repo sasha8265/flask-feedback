@@ -26,6 +26,8 @@ def register_user():
     Show registration form
     Register a new user on form submission
     """
+    if "username" in session:
+        return redirect(f"users/{session['username']}")
 
     form = RegisterForm()
 
@@ -55,7 +57,7 @@ def register_user():
         # if RegisterForm.validate():
         #     db.session.commit()
 
-        session['user_id'] = new_user.id
+        session['username'] = new_user.username
         flash ('Welcome! Successfully created your account!', "success")
 
         return redirect('/secret')
@@ -69,6 +71,9 @@ def register_user():
 def login_user():
     """Show login form or handle form submission"""
 
+    if "username" in session:
+        return redirect(f"users/{session['username']}")
+        
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data
@@ -78,8 +83,9 @@ def login_user():
 
         if user:
             flash(f'Welcome back {user.first_name} {user.last_name}!', "primary")
-            session['user_id'] = user.id
-            return redirect('/secret')
+
+            session['username'] = user.username
+            return redirect(f"/users/{user.username}")
 
         else:
             flash("invalid username or password. Please try again", "danger")
@@ -89,19 +95,19 @@ def login_user():
 
 
 
-@app.route('/secret')
-def secret_page():
+@app.route('/users/<username>')
+def show_user(username):
     """
-    Show secret page if user is logged in
+    Show user's page if user is logged in
     If no user is logged in, returns to register page
     """
 
-    if "user_id" not in session:
-        flash('Please register or login first!', "warning")
+    if username != session['username'] or "username" not in session:
+        flash('Sorry, you are not authorized to view that page')
         return redirect('/')
 
-    else:
-        return render_template('secret.html')
+    user = User.query.get(username)
+    return render_template('show_user.html', user=user)
 
 
 
@@ -109,6 +115,6 @@ def secret_page():
 def logout_user():
     """Log out current user in session"""
 
-    session.pop('user_id')
+    session.pop('username')
     flash('Goodbye!', 'info')
     return redirect('/')
