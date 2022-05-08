@@ -60,7 +60,7 @@ def register_user():
         session['username'] = new_user.username
         flash ('Welcome! Successfully created your account!', "success")
 
-        return redirect('/secret')
+        return redirect(f'/users/{session["username"]}')
 
     else:
         return render_template('register.html', form=form)
@@ -73,7 +73,7 @@ def login_user():
 
     if "username" in session:
         return redirect(f"users/{session['username']}")
-        
+
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data
@@ -103,11 +103,15 @@ def show_user(username):
     """
 
     if username != session['username'] or "username" not in session:
-        flash('Sorry, you are not authorized to view that page')
+        # flash('Sorry, you are not authorized to view that page')
         return redirect('/')
+        # raise Unauthorized()
 
     user = User.query.get(username)
     return render_template('show_user.html', user=user)
+
+
+
 
 
 
