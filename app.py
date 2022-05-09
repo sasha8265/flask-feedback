@@ -157,6 +157,23 @@ def edit_feedback(feedback_id):
 
 
 
+@app.route('/feedback/<int:feedback_id>/delete', methods=["GET", "POST"])
+def delete_feedback(feedback_id):
+
+    feedback = Feedback.query.get_or_404(feedback_id)
+    form = FeedbackForm(obj=feedback)
+        
+    if feedback.username != session['username'] or "username" not in session:
+        # flash('Sorry, you are not authorized to view that page')
+        return redirect('/')
+        
+    db.session.delete(feedback)
+    db.session.commit()
+    flash("Feedback Deleted!", "info")
+    return redirect(f'/users/{session["username"]}')
+
+
+
 
 @app.route('/logout')
 def logout_user():
