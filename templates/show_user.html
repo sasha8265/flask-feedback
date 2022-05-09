@@ -10,14 +10,17 @@
     <div class="card-body">
         <h5 class="card-title">{{ user.first_name }} {{ user.last_name }}</h5>
         <p class="card-text">Email: {{ user.email }}</p>
-        <a href="/logout" class="btn btn-secondary">Logout</a>
-        <a href="#" class="btn btn-outline-secondary">Edit User</a>
+        <form method="POST" action="/users/{{user.username}}/delete">
+            {{ form.hidden_tag() }}
+            <a href="/logout" class="btn btn-secondary">Logout</a>
+            <button class="btn btn-outline-danger mx-3">Delete User</button>
+        </form>
     </div>
 </div>
 
-<div class="mt-5">
+<div class="my-5">
     <h3>Feedback</h3>
-    <a href="/users/{{user.username}}/feedback/add" class="btn btn-primary">Add Feedback</a>
+    <a href="/users/{{user.username}}/feedback/add" class="btn btn-outline-primary">Add Feedback</a>
 
     {% for feedback in user.feedback %}
 

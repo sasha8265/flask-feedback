@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash
 from models import connect_db, db, User, Feedback
-from forms import RegisterForm, LoginForm, FeedbackForm
+from forms import RegisterForm, LoginForm, FeedbackForm, DeleteForm
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
@@ -15,16 +15,21 @@ connect_db(app)
 db.create_all()
 
 
+"""
+User routes
+"""
 @app.route('/')
 def home():
+    """Redirect to Register route"""
     return redirect('/register')
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register_user():
     """
-    Show registration form
-    Register a new user on form submission
+    Check if user is in the session
+    If not - Show registration form and register a new user on form submission
+    If user in the session, redirect to user's page
     """
     if "username" in session:
         return redirect(f"users/{session['username']}")
@@ -41,7 +46,6 @@ def register_user():
 
         db.session.add(new_user)
 
-        # Move this logic into the form class
         try:
             db.session.commit()
         except IntegrityError:
@@ -54,8 +58,6 @@ def register_user():
             form.email.errors.append('Email address already taken')
             return render_template('register.html', form=form)
 
-        # if RegisterForm.validate():
-        #     db.session.commit()
 
         session['username'] = new_user.username
         flash ('Welcome! Successfully created your account!', "success")
@@ -69,7 +71,7 @@ def register_user():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_user():
-    """Show login form or handle form submission"""
+    """Show login form and handle form submission"""
 
     if "username" in session:
         return redirect(f"users/{session['username']}")
@@ -99,22 +101,60 @@ def login_user():
 def show_user(username):
     """
     Show user's page if user is logged in
-    If no user is logged in, returns to register page
+    If no user in the session, returns to register page
     """
 
     if username != session['username'] or "username" not in session:
         # flash('Sorry, you are not authorized to view that page')
         return redirect('/')
-
+    form = DeleteForm()
     user = User.query.get(username)
 
-    return render_template('show_user.html', user=user)
+    return render_template('show_user.html', user=user, form=form)
+
+
+
+@app.route('/logout')
+def logout_user():
+    """Log out current user in session"""
+
+    session.pop('username')
+    flash('Goodbye!', 'info')
+    return redirect('/')
+
+
+
+@app.route('/users/<username>/delete', methods=["GET", "POST"])
+def delete_user(username):
+    """Delete current user in session"""
+
+    user = User.query.get_or_404(username)
+        
+    if username != session['username'] or "username" not in session:
+        # flash('Sorry, you are not authorized to view that page')
+        return redirect('/')
+        
+    form = DeleteForm()
+    if form.validate_on_submit():
+        db.session.delete(user)
+        db.session.commit()
+        session.pop("username")
+
+    flash("User Deleted!", "info")
+    return redirect('/')
 
 
 
 
+"""
+Feedback routes
+"""
 @app.route('/users/<username>/feedback/add', methods=["GET", "POST"])
 def add_feedback(username):
+    """
+    Shows add feedback form and handles form submission for current user
+    """
+
     if username != session['username'] or "username" not in session:
         # flash('Sorry, you are not authorized to view that page')
         return redirect('/')
@@ -137,6 +177,9 @@ def add_feedback(username):
 
 @app.route('/feedback/<int:feedback_id>/update', methods=["GET", "POST"])
 def edit_feedback(feedback_id):
+    """
+    Shows update feedback form and handles form submission for selected feedback
+    """
 
     feedback = Feedback.query.get(feedback_id)
     form = FeedbackForm(obj=feedback)
@@ -157,8 +200,10 @@ def edit_feedback(feedback_id):
 
 
 
+
 @app.route('/feedback/<int:feedback_id>/delete', methods=["GET", "POST"])
 def delete_feedback(feedback_id):
+    """Deletes selected feedback from current user in session"""
 
     feedback = Feedback.query.get_or_404(feedback_id)
     form = FeedbackForm(obj=feedback)
@@ -175,10 +220,3 @@ def delete_feedback(feedback_id):
 
 
 
-@app.route('/logout')
-def logout_user():
-    """Log out current user in session"""
-
-    session.pop('username')
-    flash('Goodbye!', 'info')
-    return redirect('/')

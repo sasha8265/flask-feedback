@@ -57,6 +57,7 @@ class User(db.Model):
             return False
 
 
+
 class Feedback(db.Model):
     __tablename__ = "feedback"
 
