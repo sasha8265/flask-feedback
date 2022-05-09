@@ -10,10 +10,30 @@
     <div class="card-body">
         <h5 class="card-title">{{ user.first_name }} {{ user.last_name }}</h5>
         <p class="card-text">Email: {{ user.email }}</p>
-        <a href="#" class="btn btn-primary">Add Feedback</a>
+        <a href="/logout" class="btn btn-secondary">Logout</a>
+        <a href="#" class="btn btn-outline-secondary">Edit User</a>
     </div>
 </div>
 
+<div class="mt-5">
+    <h3>Feedback</h3>
+    <a href="/users/{{user.username}}/feedback/add" class="btn btn-primary">Add Feedback</a>
+
+    {% for feedback in user.feedback %}
+
+    <div class="card w-100 mt-4">
+        <div class="card-body">
+            <h5 class="card-title"><b>{{ feedback.title }}</b></h5>
+            <p class="card-text">
+                {{ feedback.content }}
+            </p>
+            <a href="/feedback/{{feedback.id}}/update" class="card-link">Edit</a>
+        </div>
+    </div>
+
+    {% endfor %}
+
+</div>
 
 
 {% endblock %}

@@ -40,3 +40,7 @@ class RegisterForm(FlaskForm):
 
     #     self.user = user
     #     return True    
+
+class FeedbackForm(FlaskForm):
+    title = StringField("Title", validators=[InputRequired()])
+    content = StringField("Content", validators=[InputRequired()])

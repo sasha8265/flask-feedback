@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash
-from models import connect_db, db, User
-from forms import RegisterForm, LoginForm
+from models import connect_db, db, User, Feedback
+from forms import RegisterForm, LoginForm, FeedbackForm
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
@@ -105,12 +105,55 @@ def show_user(username):
     if username != session['username'] or "username" not in session:
         # flash('Sorry, you are not authorized to view that page')
         return redirect('/')
-        # raise Unauthorized()
 
     user = User.query.get(username)
+
     return render_template('show_user.html', user=user)
 
 
+
+
+@app.route('/users/<username>/feedback/add', methods=["GET", "POST"])
+def add_feedback(username):
+    if username != session['username'] or "username" not in session:
+        # flash('Sorry, you are not authorized to view that page')
+        return redirect('/')
+
+    form = FeedbackForm()
+    user = User.query.get(username)
+
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+        new_feedback = Feedback(title=title, content=content, username=session["username"])
+
+        db.session.add(new_feedback)
+        db.session.commit()
+        return redirect(f'/users/{session["username"]}')
+
+    return render_template('feedback/add_feedback.html', user=user, form=form)
+
+
+
+@app.route('/feedback/<int:feedback_id>/update', methods=["GET", "POST"])
+def edit_feedback(feedback_id):
+
+    feedback = Feedback.query.get(feedback_id)
+    form = FeedbackForm(obj=feedback)
+
+
+    if feedback.username != session['username'] or "username" not in session:
+        # flash('Sorry, you are not authorized to view that page')
+        return redirect('/')
+
+    if form.validate_on_submit():
+        feedback.title = form.title.data
+        feedback.content = form.content.data
+
+        db.session.commit()
+        return redirect(f'/users/{session["username"]}')
+
+    return render_template('feedback/update_feedback.html', form=form, feedback=feedback)
 
 
 
